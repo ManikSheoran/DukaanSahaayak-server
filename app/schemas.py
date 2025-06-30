@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
 
@@ -31,6 +31,7 @@ class SaleEntry(BaseModel):
     customer_name: str
     phone_no: str
     products: List[ProductEntry]
+    transaction_date: date = Field(default_factory=date.today)
     bill_paid: bool
     payment_due_date: Optional[date] = None
 
@@ -38,6 +39,7 @@ class PurchaseEntry(BaseModel):
     vendor_name: str
     phone_no: str
     products: List[ProductEntry]
+    transaction_date: date = Field(default_factory=date.today)
     bill_paid: bool
     payment_due_date: Optional[date] = None
 

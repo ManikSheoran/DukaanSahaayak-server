@@ -26,6 +26,7 @@ class SalesData(Base):
     __tablename__ = "sales_data"
     sales_id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("customers.cust_id"))
+    transaction_date = Column(Date)
     total_amount = Column(Float)
     total_quantity = Column(Integer)
 
@@ -33,6 +34,7 @@ class PurchaseData(Base):
     __tablename__ = "purchase_data"
     purch_id = Column(Integer, primary_key=True, index=True)
     vendor_id = Column(Integer, ForeignKey("vendors.vend_id"))
+    transaction_date = Column(Date)
     total_amount = Column(Float)
     total_quantity = Column(Integer)
 

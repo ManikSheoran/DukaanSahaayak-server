@@ -62,6 +62,7 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
 
     sale_entry = models.SalesData(
         customer_id=customer.cust_id,
+        transaction_date=sale.transaction_date,
         total_amount=0,
         total_quantity=0
     )
@@ -72,10 +73,21 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
     for p in sale.products:
         product = get_product_by_name(db, p.product_name)
         if not product:
-            raise ValueError(f"Product {p.product_name} does not exist in inventory")
+            product = models.Product(
+                product_name=p.product_name,
+                price_purchase=p.rate,
+                price_sale=p.sale_price if p.sale_price is not None else p.rate,
+                quantity=0 
+            )
+            db.add(product)
+            db.commit()
+            db.refresh(product)
         if product.quantity < p.quantity:
-            raise ValueError(f"Not enough stock for product {product.product_name}")
-        product.quantity -= p.quantity
+            # Allow negative inventory if you want to record the sale anyway
+            # Or, you can set product.quantity = 0 and allow negative stock
+            product.quantity -= p.quantity
+        else:
+            product.quantity -= p.quantity
         db.commit()
 
         link = models.SaleProduct(sales_id=sale_entry.sales_id, prod_id=product.product_id)
@@ -98,7 +110,7 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
     if not sale.bill_paid:
         db.add(models.UdharSales(
             sales_id=sale_entry.sales_id,
-            date_of_entry=date.today(),
+            date_of_entry=sale.transaction_date,
             date_of_payment=sale.payment_due_date
         ))
         db.commit()
@@ -120,6 +132,7 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
 
     purch_entry = models.PurchaseData(
         vendor_id=vendor.vend_id,
+        transaction_date=purchase.transaction_date,
         total_amount=0,
         total_quantity=0
     )
@@ -148,7 +161,7 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
     if not purchase.bill_paid:
         db.add(models.UdharPurchase(
             purch_id=purch_entry.purch_id,
-            date_of_entry=date.today(),
+            date_of_entry=purchase.transaction_date,
             date_of_payment=purchase.payment_due_date
         ))
         db.commit()
