@@ -2,11 +2,20 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
 
-class ProductEntry(BaseModel):
+
+# For sales, use a separate schema matching your required fields
+class SaleProductEntry(BaseModel):
     product_name: str
     quantity: int
     rate: float
-    sale_price: Optional[float] = None
+    sale_price: float
+    total_amount: float
+
+class ProductEntry(BaseModel):
+    product_name: str
+    quantity: int
+    price_purchase: float
+    price_sale: float
 
 class ProductBase(BaseModel):
     product_name: str
@@ -30,10 +39,11 @@ class ProductOut(ProductBase):
 class SaleEntry(BaseModel):
     customer_name: str
     phone_no: str
-    products: List[ProductEntry]
+    products: List[SaleProductEntry]
     transaction_date: date = Field(default_factory=date.today)
     bill_paid: bool
     payment_due_date: Optional[date] = None
+    total_amount: float
 
 class PurchaseEntry(BaseModel):
     vendor_name: str
