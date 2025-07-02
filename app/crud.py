@@ -73,8 +73,7 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
     for p in sale.products:
         product = get_product_by_name(db, p.product_name)
         if not product:
-            raise ValueError(f"Product {p.product_name} does not exist in inventory")
-        
+            raise Exception(f"Product '{p.product_name}' does not exist in inventory. Please add it to inventory first.")
         product.quantity -= p.quantity
         db.commit()
         link = models.SaleProduct(sales_id=sale_entry.sales_id, prod_id=product.product_id)
@@ -163,3 +162,21 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
         db.commit()
 
     return {"msg": "Purchase recorded", "purchase_id": purch_entry.purch_id}
+
+def get_all_sales(db: Session):
+    return db.query(models.SalesData).all()
+
+def get_all_purchases(db: Session):
+    return db.query(models.PurchaseData).all()
+
+def get_all_vendors(db: Session):
+    return db.query(models.Vendor).all()
+
+def get_sale_by_id(db: Session, sale_id: int):
+    return db.query(models.SalesData).filter(models.SalesData.sales_id == sale_id).first()
+
+def get_purchase_by_id(db: Session, purchase_id: int):
+    return db.query(models.PurchaseData).filter(models.PurchaseData.purch_id == purchase_id).first()
+
+def get_vendor_by_id(db: Session, vendor_id: int):
+    return db.query(models.Vendor).filter(models.Vendor.vend_id == vendor_id).first()
