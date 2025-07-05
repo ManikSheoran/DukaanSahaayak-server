@@ -1,6 +1,28 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 from datetime import date
+import os
+from twilio.rest import Client
+from dotenv import load_dotenv
+
+load_dotenv()
+
+def send_sms(to_number: str, body: str):
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    if not account_sid or not auth_token:
+        print("Twilio credentials not set")
+        return
+    client = Client(account_sid, auth_token)
+    try:
+        message = client.messages.create(
+            body=body,
+            from_="+15413258526",
+            to="+919728084306"
+        )
+        print(f"SMS sent to {to_number}: {message.sid}")
+    except Exception as e:
+        print(f"Failed to send SMS: {e}")
 
 def create_product(db: Session, product: schemas.ProductCreate):
     db_product = models.Product(**product.dict())
@@ -70,6 +92,7 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
     db.commit()
     db.refresh(sale_entry)
 
+    bill_lines = []
     for p in sale.products:
         product = get_product_by_name(db, p.product_name)
         if not product:
@@ -86,10 +109,26 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
             is_profit=profit >= 0,
             amount=abs(profit)
         ))
+        # Add product line to bill
+        bill_lines.append(f"{p.product_name}: {p.quantity} x {p.rate} = {p.total_amount}")
 
     sale_entry.total_amount = total_amt
     sale_entry.total_quantity = total_qty
     db.commit()
+
+    # Send SMS if phone_no exists
+    if sale.phone_no:
+        bill_status = "PAID" if sale.bill_paid else f"DUE by {sale.payment_due_date}"
+        bill_text = (
+            f"Bill for {sale.customer_name}\n"
+            f"Date: {sale.transaction_date}\n"
+            f"----------------------\n"
+            + "\n".join(bill_lines) +
+            f"\n----------------------\n"
+            f"Total: {total_amt}\n"
+            f"Status: {bill_status}"
+        )
+        send_sms(sale.phone_no, bill_text)
 
     if not sale.bill_paid:
         db.add(models.UdharSales(
@@ -124,11 +163,10 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
     db.commit()
     db.refresh(purch_entry)
 
+    bill_lines = []
     for p in purchase.products:
-        # Try to get product by name
         product = get_product_by_name(db, p.product_name)
         if not product:
-            # Create new product with all fields
             product = models.Product(
                 product_name=p.product_name,
                 price_purchase=p.price_purchase,
@@ -139,30 +177,39 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
             db.commit()
             db.refresh(product)
         else:
-            # Update all fields for existing product
-            product.price_purchase = p.price_purchase
-            product.price_sale = p.price_sale
-            product.quantity += p.quantity
-            db.commit()
-            # Weighted average for purchase price
             old_qty = product.quantity
             new_qty = p.quantity
-            total_qty = old_qty + new_qty
-            if total_qty > 0:
+            total_qty_update = old_qty + new_qty
+            if total_qty_update > 0:
                 product.price_purchase = (
-                    (product.price_purchase * old_qty + p.price_purchase * new_qty) / total_qty
+                    (product.price_purchase * old_qty + p.price_purchase * new_qty) / total_qty_update
                 )
             product.price_sale = p.price_sale
-            product.quantity = total_qty
+            product.quantity = total_qty_update
             db.commit()
         link = models.PurchaseProduct(purch_id=purch_entry.purch_id, prod_id=product.product_id)
         db.add(link)
         total_amt += p.quantity * p.price_purchase
         total_qty += p.quantity
+        
+        bill_lines.append(f"{p.product_name}: {p.quantity} x {p.price_purchase} = {p.quantity * p.price_purchase}")
 
     purch_entry.total_amount = total_amt
     purch_entry.total_quantity = total_qty
     db.commit()
+
+    if purchase.phone_no:
+        bill_status = "PAID" if purchase.bill_paid else f"DUE by {purchase.payment_due_date}"
+        bill_text = (
+            f"Purchase Bill for {purchase.vendor_name}\n"
+            f"Date: {purchase.transaction_date}\n"
+            f"----------------------\n"
+            + "\n".join(bill_lines) +
+            f"\n----------------------\n"
+            f"Total: {total_amt}\n"
+            f"Status: {bill_status}"
+        )
+        send_sms(purchase.phone_no, bill_text)
 
     if not purchase.bill_paid:
         db.add(models.UdharPurchase(
