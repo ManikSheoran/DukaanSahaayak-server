@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .. import database, models, crud
 
@@ -12,7 +12,7 @@ def get_vendors(db: Session = Depends(database.get_db)):
 
 @router.get("/vendors/{vendor_id}")
 def get_vendor_by_id(vendor_id: int, db: Session = Depends(database.get_db)):
-    vendor = crud.get_vendor_by_id(db, vendor_id)
+    vendor = db.query(models.Vendor).filter(models.Vendor.vend_id == vendor_id).first()
     if not vendor:
-        return {"error": "Vendor not found"}
+        raise HTTPException(status_code=404, detail="Vendor not found")
     return vendor
