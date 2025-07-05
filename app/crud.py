@@ -78,9 +78,9 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
         db.commit()
         link = models.SaleProduct(sales_id=sale_entry.sales_id, prod_id=product.product_id)
         db.add(link)
-        total_amt += p.quantity * product.price_sale
+        total_amt += p.quantity * p.rate
         total_qty += p.quantity
-        profit = (product.price_sale - product.price_purchase) * p.quantity
+        profit = (p.rate - product.price_purchase) * p.quantity
         db.add(models.ProfitLoss(
             sales_id=sale_entry.sales_id,
             is_profit=profit >= 0,
@@ -143,6 +143,17 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
             product.price_purchase = p.price_purchase
             product.price_sale = p.price_sale
             product.quantity += p.quantity
+            db.commit()
+            # Weighted average for purchase price
+            old_qty = product.quantity
+            new_qty = p.quantity
+            total_qty = old_qty + new_qty
+            if total_qty > 0:
+                product.price_purchase = (
+                    (product.price_purchase * old_qty + p.price_purchase * new_qty) / total_qty
+                )
+            product.price_sale = p.price_sale
+            product.quantity = total_qty
             db.commit()
         link = models.PurchaseProduct(purch_id=purch_entry.purch_id, prod_id=product.product_id)
         db.add(link)
