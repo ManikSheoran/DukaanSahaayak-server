@@ -7,6 +7,7 @@ from .routes import udhaar
 from .routes import profit_loss
 from .routes import customer
 from .routes import vendor
+from .routes import extract_products
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -30,3 +31,4 @@ app.include_router(udhaar.router, prefix="/api", tags=["Udhaar"])
 app.include_router(profit_loss.router, prefix="/api", tags=["ProfitLoss"])
 app.include_router(customer.router, prefix="/api", tags=["Customer"])
 app.include_router(vendor.router, prefix="/api", tags=["Vendor"])
+app.include_router(extract_products.router, prefix="/api", tags=["ExtractProducts"])
