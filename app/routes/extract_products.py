@@ -20,7 +20,7 @@ def get_inventory_names(db: Session):
 def match_product(name: str, inventory: list[str], threshold: int = 70):
     match, score, _ = process.extractOne(name, inventory, scorer=fuzz.ratio)
     print(inventory, match, name, score)
-    return match if score >= threshold else None
+    return match if score >= threshold else name
 
 @router.post("/extract-products")
 async def extract_products(

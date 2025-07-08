@@ -56,7 +56,7 @@ def delete_product(db: Session, product_id: int):
     return db_product
 
 def get_or_create_customer(db: Session, name: str, phone: str):
-    customer = db.query(models.Customer).filter_by(customer_name=name, phone_no=phone).first()
+    customer = db.query(models.Customer).filter(models.Customer.phone_no == phone).first()
     if not customer:
         customer = models.Customer(customer_name=name, phone_no=phone)
         db.add(customer)
@@ -79,6 +79,8 @@ def get_or_create_product(db: Session, product: schemas.ProductEntry):
     return prod
 
 def handle_sale(db: Session, sale: schemas.SaleEntry):
+    if not sale.phone_no:
+        sale.phone_no = 9999999999
     customer = get_or_create_customer(db, sale.customer_name, sale.phone_no)
     total_amt, total_qty = 0, 0
 
@@ -141,7 +143,7 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
     return {"msg": "Sale recorded", "sale_id": sale_entry.sales_id}
 
 def get_or_create_vendor(db: Session, name: str, phone: str):
-    vendor = db.query(models.Vendor).filter_by(vendor_name=name, phone_no=phone).first()
+    vendor = db.query(models.Vendor).filter_by(phone_no=phone).first()
     if not vendor:
         vendor = models.Vendor(vendor_name=name, phone_no=phone)
         db.add(vendor)
@@ -150,6 +152,8 @@ def get_or_create_vendor(db: Session, name: str, phone: str):
     return vendor
 
 def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
+    if not purchase.phone_no:
+        purchase.phone_no = 9999999999
     vendor = get_or_create_vendor(db, purchase.vendor_name, purchase.phone_no)
     total_amt, total_qty = 0, 0
 
