@@ -6,14 +6,14 @@ from datetime import date
 # For sales, use a separate schema matching your required fields
 class SaleProductEntry(BaseModel):
     product_name: str
-    quantity: int
+    quantity: float
     rate: float
     sale_price: float
     total_amount: float
 
 class ProductEntry(BaseModel):
     product_name: str
-    quantity: int
+    quantity: float
     price_purchase: float
     price_sale: float
 
@@ -21,7 +21,7 @@ class ProductBase(BaseModel):
     product_name: str
     price_purchase: float
     price_sale: float
-    quantity: int
+    quantity: float
 
 class ProductCreate(ProductBase):
     pass
@@ -29,7 +29,7 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     price_purchase: Optional[float] = None
     price_sale: Optional[float] = None
-    quantity: Optional[int] = None
+    quantity: Optional[float] = None
 
 class ProductOut(ProductBase):
     product_id: int

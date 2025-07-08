@@ -20,7 +20,7 @@ class Product(Base):
     product_name = Column(String, unique=True)
     price_purchase = Column(Float)
     price_sale = Column(Float)
-    quantity = Column(Integer)
+    quantity = Column(Float)
 
 class SalesData(Base):
     __tablename__ = "sales_data"
@@ -28,7 +28,7 @@ class SalesData(Base):
     customer_id = Column(Integer, ForeignKey("customers.cust_id"))
     transaction_date = Column(Date)
     total_amount = Column(Float)
-    total_quantity = Column(Integer)
+    total_quantity = Column(Float)
 
 class PurchaseData(Base):
     __tablename__ = "purchase_data"
@@ -36,7 +36,7 @@ class PurchaseData(Base):
     vendor_id = Column(Integer, ForeignKey("vendors.vend_id"))
     transaction_date = Column(Date)
     total_amount = Column(Float)
-    total_quantity = Column(Integer)
+    total_quantity = Column(Float)
 
 class ProfitLoss(Base):
     __tablename__ = "profit_loss"
