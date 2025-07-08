@@ -40,9 +40,10 @@ class PurchaseData(Base):
 
 class ProfitLoss(Base):
     __tablename__ = "profit_loss"
-    sales_id = Column(Integer, ForeignKey("sales_data.sales_id"), primary_key=True)
-    is_profit = Column(Boolean)
-    amount = Column(Float)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True) 
+    sales_id = Column(Integer, ForeignKey("sales_data.sales_id"), nullable=False)
+    is_profit = Column(Boolean, nullable=False)
+    amount = Column(Float, nullable=False)
 
 class SaleProduct(Base):
     __tablename__ = "sale_product"

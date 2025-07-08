@@ -80,8 +80,10 @@ def get_or_create_product(db: Session, product: schemas.ProductEntry):
 
 def handle_sale(db: Session, sale: schemas.SaleEntry):
     if not sale.phone_no:
-        sale.phone_no = 9999999999
+        sale.phone_no = "9999999999"
+
     customer = get_or_create_customer(db, sale.customer_name, sale.phone_no)
+
     total_amt, total_qty = 0, 0
 
     sale_entry = models.SalesData(
@@ -95,30 +97,59 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
     db.refresh(sale_entry)
 
     bill_lines = []
+
+    sale_products_to_add = []
+    profits_to_add = []
+
     for p in sale.products:
+        if p.quantity <= 0:
+            continue
+
         product = get_product_by_name(db, p.product_name)
         if not product:
-            raise Exception(f"Product '{p.product_name}' does not exist in inventory. Please add it to inventory first.")
+            raise Exception(f"Product '{p.product_name}' does not exist in inventory. Please add it first.")
+
+        if product.quantity < p.quantity:
+            raise Exception(f"Not enough stock for product '{p.product_name}' (Available: {product.quantity}, Needed: {p.quantity})")
+
         product.quantity -= p.quantity
-        db.commit()
-        link = models.SaleProduct(sales_id=sale_entry.sales_id, prod_id=product.product_id)
-        db.add(link)
+
+        link = models.SaleProduct(
+            sales_id=sale_entry.sales_id,
+            prod_id=product.product_id
+        )
+        sale_products_to_add.append(link)
+
         total_amt += p.quantity * p.rate
         total_qty += p.quantity
+
         profit = (p.rate - product.price_purchase) * p.quantity
-        db.add(models.ProfitLoss(
+        profit_record = models.ProfitLoss(
             sales_id=sale_entry.sales_id,
             is_profit=profit >= 0,
             amount=abs(profit)
-        ))
-        # Add product line to bill
-        bill_lines.append(f"{p.product_name}: {p.quantity} x {p.rate} = {p.total_amount}")
+        )
+        profits_to_add.append(profit_record)
+
+        line_total = p.quantity * p.rate
+        bill_lines.append(f"{p.product_name}: {p.quantity} x {p.rate} = {line_total}")
 
     sale_entry.total_amount = total_amt
     sale_entry.total_quantity = total_qty
+
+    db.add_all(sale_products_to_add)
+    db.add_all(profits_to_add)
+
+    if not sale.bill_paid:
+        udhar = models.UdharSales(
+            sales_id=sale_entry.sales_id,
+            date_of_entry=sale.transaction_date,
+            date_of_payment=sale.payment_due_date
+        )
+        db.add(udhar)
+
     db.commit()
 
-    # Send SMS if phone_no exists
     if sale.phone_no:
         bill_status = "PAID" if sale.bill_paid else f"DUE by {sale.payment_due_date}"
         bill_text = (
@@ -132,15 +163,8 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
         )
         send_sms(sale.phone_no, bill_text)
 
-    if not sale.bill_paid:
-        db.add(models.UdharSales(
-            sales_id=sale_entry.sales_id,
-            date_of_entry=sale.transaction_date,
-            date_of_payment=sale.payment_due_date
-        ))
-        db.commit()
-
     return {"msg": "Sale recorded", "sale_id": sale_entry.sales_id}
+
 
 def get_or_create_vendor(db: Session, name: str, phone: str):
     vendor = db.query(models.Vendor).filter_by(phone_no=phone).first()
@@ -153,7 +177,7 @@ def get_or_create_vendor(db: Session, name: str, phone: str):
 
 def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
     if not purchase.phone_no:
-        purchase.phone_no = 9999999999
+        purchase.phone_no = "9999999999"
     vendor = get_or_create_vendor(db, purchase.vendor_name, purchase.phone_no)
     total_amt, total_qty = 0, 0
 
