@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from .. import crud, schemas, database
 
@@ -36,12 +36,8 @@ def delete_product(product_id: int, db: Session = Depends(database.get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"msg": "Product deleted successfully"}
 
-
-from fastapi import Body
-
 @router.put("/products/{product_name}")
 def update_product_quantity(product_name: str, quantity: float = Body(..., embed=True), db: Session = Depends(database.get_db)):
-    # Capitalize product name before searching/adding
     product_name_cap = product_name.strip().capitalize()
     product = crud.get_product_by_name(db, product_name_cap)
     if not product:

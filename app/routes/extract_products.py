@@ -56,7 +56,7 @@ async def extract_products(
         print("Extracted JSON:", extracted)
         for item in extracted:
             name = item.get("product_name", "")
-            qty = item.get("quantity", 0)
+            qty = float(item.get("quantity", 0))
             matched_name = match_product(name, inventory_names)
             if matched_name:
                 matched_products.append({
