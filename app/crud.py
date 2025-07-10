@@ -1,28 +1,6 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
+from . import models, schemas, utils
 from datetime import date
-import os
-from twilio.rest import Client
-from dotenv import load_dotenv
-
-load_dotenv()
-
-def send_sms(to_number: str, body: str):
-    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
-    if not account_sid or not auth_token:
-        print("Twilio credentials not set")
-        return
-    client = Client(account_sid, auth_token)
-    try:
-        message = client.messages.create(
-            body=body,
-            from_="+15413258526",
-            to="+919728084306"
-        )
-        print(f"SMS sent to {to_number}: {message.sid}")
-    except Exception as e:
-        print(f"Failed to send SMS: {e}")
 
 def create_product(db: Session, product: schemas.ProductCreate):
     db_product = models.Product(**product.dict())
@@ -82,7 +60,7 @@ def get_or_create_product(db: Session, product: schemas.ProductEntry):
 
 def handle_sale(db: Session, sale: schemas.SaleEntry):
     if not sale.phone_no:
-        sale.phone_no = "9999999999"
+        sale.phone_no = "9728084306"
 
     customer = get_or_create_customer(db, sale.customer_name, sale.phone_no)
 
@@ -162,7 +140,7 @@ def handle_sale(db: Session, sale: schemas.SaleEntry):
             f"Total: {total_amt}\n"
             f"Status: {bill_status}"
         )
-        send_sms(sale.phone_no, bill_text)
+        utils.send_sms(sale.phone_no, bill_text)
 
     return {"msg": "Sale recorded", "sale_id": sale_entry.sales_id}
 
@@ -178,7 +156,7 @@ def get_or_create_vendor(db: Session, name: str, phone: str):
 
 def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
     if not purchase.phone_no:
-        purchase.phone_no = "9999999999"
+        purchase.phone_no = "9728084306"
 
     vendor = get_or_create_vendor(db, purchase.vendor_name, purchase.phone_no)
     total_amt, total_qty = 0, 0
@@ -240,7 +218,7 @@ def handle_purchase(db: Session, purchase: schemas.PurchaseEntry):
             f"Total: {total_amt}\n"
             f"Status: {bill_status}"
         )
-        send_sms(purchase.phone_no, bill_text)
+        utils.send_sms(purchase.phone_no, bill_text)
 
     if not purchase.bill_paid:
         db.add(models.UdharPurchase(

@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date
-from .. import database, models, schemas
-
+from .. import database, models, schemas, utils
 from datetime import timedelta
 
 router = APIRouter()
@@ -77,3 +76,54 @@ def get_due_udhaar_notifications(
             } for u in purchases_due
         ]
     }
+
+@router.post("/udhaar/sales/{id}/send_sms/")
+def send_sales_udhaar_sms(
+    id: int, db: Session = Depends(database.get_db)
+):
+    udhar = db.query(models.UdharSales).filter(models.UdharSales.udhar_id == id).first()
+    if not udhar:
+        raise HTTPException(status_code=404, detail="Udhar entry not found")
+
+    sales = db.query(models.SalesData).filter(models.SalesData.sales_id == udhar.sales_id).first()
+    if not sales:
+        raise HTTPException(status_code=404, detail="Sales record not found")
+
+    customer = db.query(models.Customer).filter(models.Customer.cust_id == sales.customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    phone_no = customer.phone_no
+    body = (
+        f"Reminder: Sales udhaar due on {udhar.date_of_payment}.\n"
+        f"Sales ID: {udhar.sales_id}\n"
+        f"Entry Date: {udhar.date_of_entry}"
+    )
+    utils.send_sms(phone_no, body)
+
+    return {"message": "SMS sent successfully", "phone": phone_no}
+
+@router.post("/udhaar/purchases/{id}/send_sms/")
+def send_purchase_udhaar_sms(
+    id: int, db: Session = Depends(database.get_db)
+):
+    udhar = db.query(models.UdharPurchase).filter(models.UdharPurchase.udhar_id == id).first()
+    if not udhar:
+        raise HTTPException(status_code=404, detail="Udhar entry not found")
+
+    purchase = db.query(models.PurchaseData).filter(models.PurchaseData.purch_id == udhar.purch_id).first()
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase record not found")
+
+    vendor = db.query(models.Vendor).filter(models.Vendor.vend_id == purchase.vendor_id).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+        
+    body = (
+        f"Reminder: Purchase udhaar due on {udhar.date_of_payment}.\n"
+        f"Purchase ID: {udhar.purch_id}\n"
+        f"Entry Date: {udhar.date_of_entry}"
+    )
+    utils.send_sms(vendor.phone_no, body)
+
+    return {"message": "SMS sent successfully", "phone": vendor.phone_no}
