@@ -10,6 +10,8 @@ from .routes import vendor
 from .routes import extract_products
 from .routes import chat
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI()
 
