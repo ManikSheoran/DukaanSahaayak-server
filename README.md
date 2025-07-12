@@ -1,6 +1,6 @@
-# BillDeck Backend
+# Dukaan Sahaayak Backend
 
-This is the backend for BillDeck, a smart inventory management system. It provides a robust API to manage products, sales, purchases, customers, vendors, and credit tracking. The application is built with FastAPI and uses a PostgreSQL database. It also integrates with Twilio for sending SMS notifications and Google's Gemini AI for intelligent product extraction from images.
+This is the backend for Dukaan Sahaayak, a smart inventory management system. It provides a robust API to manage products, sales, purchases, customers, vendors, and credit tracking. The application is built with FastAPI and uses a PostgreSQL database. It also integrates with Twilio for sending SMS notifications and Google's Gemini AI for intelligent product extraction from images.
 
 ## Features
 
@@ -36,7 +36,7 @@ Follow these steps to get the development environment running.
 
 ```bash
 git clone <your-repository-url>
-cd BillDeck-backend
+cd DukaanSahaayak-server
 ```
 
 ### 3. Create and Activate a Virtual Environment
