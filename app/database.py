@@ -12,7 +12,7 @@ def get_db():
         yield db
     finally:
         db.close()
-DATABASE_URL = os.environ.get("DB_URL")
+DATABASE_URL = "postgresql://postgres:mashis01@localhost:5432/smartinventory"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
